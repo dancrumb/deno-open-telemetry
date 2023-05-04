@@ -1,0 +1,32 @@
+{
+  "tasks": {},
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "strictNullChecks": true
+  },
+  "fmt": {
+    "files": {
+      "include": ["./src"]
+    }
+  },
+  "imports": {
+    "long": "https://deno.land/x/long@v1.0.0/mod.ts",
+    "protobufjs/": "./src/protobufjs/",
+    "protobuf_ts": "https://deno.land/x/protobuf_ts@v1.2.2/mod.ts"
+  },
+  "lint": {
+    "rules": {
+      "tags": ["recommended"],
+      "exclude": []
+    },
+    "files": {
+      "include": ["./src"],
+      "exclude": [
+        "./src/services",
+        "./src/messages",
+        "src/runtime",
+        "src/otel.ts"
+      ]
+    }
+  }
+}

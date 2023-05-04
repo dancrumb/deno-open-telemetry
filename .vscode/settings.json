@@ -1,0 +1,11 @@
+{
+  "deno.enable": true,
+  "cSpell.words": ["Hexstring", "OTEL"],
+  "deno.codeLens.test": true,
+  "editor.defaultFormatter": "denoland.vscode-deno",
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.organizeImports": true
+  },
+  "typescript.validate.enable": false
+}

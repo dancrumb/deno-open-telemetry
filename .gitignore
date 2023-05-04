@@ -1,0 +1,3 @@
+*.lcov
+cov_profile/
+node_modules/
