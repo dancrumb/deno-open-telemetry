@@ -10,9 +10,8 @@
     }
   },
   "imports": {
-    "long": "https://deno.land/x/long@v1.0.0/mod.ts",
-    "protobufjs/": "./src/protobufjs/",
-    "protobuf_ts": "https://deno.land/x/protobuf_ts@v1.2.2/mod.ts"
+    "long": "./deps.ts",
+    "protobufjs/": "./src/protobufjs/"
   },
   "lint": {
     "rules": {

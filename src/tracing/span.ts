@@ -1,58 +1,26 @@
 import { TelemetryBag } from "../basics.ts";
 import { Context } from "../context/context.ts";
 import {
-  Span,
   Span_Event,
   Span_Link,
   Span_SpanKind,
   Status,
   Status_StatusCode,
+  type Span,
 } from "../opentelemetry/proto/trace/v1/trace.ts";
+import { DateTime, dateAsLong } from "../utils/date-as-long.ts";
 import { generateId } from "../utils/generate-id.ts";
 import { getHexstring } from "../utils/hex.ts";
 import { getSpan } from "./api.ts";
 import {
-  getSpanContext,
-  getTraceId,
   SpanContext,
   TraceFlags,
+  getSpanContext,
+  getTraceId,
 } from "./span-context.ts";
-import { TraceState } from "./trace-state.ts";
-
-export enum SpanStatusCode {
-  "OK",
-  "Error",
-  "Unset",
-}
-
-// export enum SpanKind {
-//   "CLIENT", // synchronous remote outgoing
-//   "SERVER", // synchronous remote incoming
-//   "PRODUCER", // asynchronous; maybe remote outgoing
-//   "CONSUMER", // asynchronous; maybe remote incoming
-//   "INTERNAL",
-// }
-
-type SpanStatus =
-  | {
-    statusCode: SpanStatusCode.Error;
-    description?: string;
-  }
-  | { statusCode: Exclude<SpanStatusCode, SpanStatusCode.Error> };
 
 export interface SpanMethods {
-  // readonly startTime: DateTime;
-  // readonly kind: SpanKind;
-  // readonly isRecording: boolean;
-  // readonly attributes: TelemetryBag;
-  // readonly events: TelemetryEvent[];
-  // readonly links: Link[];
-
-  // get status(): SpanStatus;
-  // get name(): string;
-  // get endTime(): DateTime | undefined;
   getContext(): SpanContext;
-
   setStatus(code: Status_StatusCode, description?: string): void;
   updateName(newName: string): void;
   end(time?: Date): void;
@@ -60,36 +28,34 @@ export interface SpanMethods {
   addException(exception: Error): void;
 }
 
-export const isRemoteSpanContext = (context: SpanContext) => context.isRemote;
-
-type LinkParam = Link | [SpanContext] | [SpanContext, TelemetryBag];
+type LinkParam = Span_Link | [SpanContext] | [SpanContext, TelemetryBag];
 
 interface SpanOptionalParams {
   kind?: Span_SpanKind;
   attributes?: TelemetryBag;
   startTime?: Date;
-  links?: Span_Link[];
+  links?: LinkParam[];
   isRecording?: boolean;
 }
 
-export interface Link {
-  spanContext: SpanContext;
-  attributes: TelemetryBag;
-}
+export const isRemote = (context: Span | SpanContext): boolean => {
+  throw new Error("Not Implemented");
+};
 
-type DateTime = Pick<Date, "toISOString">;
-
-export class RecordingSpan implements Span, SpanMethods {
+export class RecordingSpan implements Span {
   public readonly isRecording: boolean;
   public readonly kind: Span_SpanKind;
   public readonly startTime: DateTime;
 
+  public droppedAttributesCount: number = 0; //TODO
+  public droppedEventsCount: number = 0; //TODO
+  public droppedLinksCount: number = 0; //TODO
+
   // SpanContext
   private _traceId: Uint8Array;
   private _spanId: Uint8Array;
-  private _traceFlags: TraceFlags;
-  private _traceState: TraceState;
-  private _isRemote: boolean;
+  private _traceFlags: TraceFlags = TraceFlags.Sampled;
+  public traceState: string;
 
   private _name: string;
   private _endTime: DateTime | undefined;
@@ -106,31 +72,36 @@ export class RecordingSpan implements Span, SpanMethods {
   constructor(
     name: string,
     parent: Context | null,
-    params: SpanOptionalParams = {},
+    params: SpanOptionalParams = {}
   ) {
     this._name = name;
     this.kind = params.kind || Span_SpanKind.SPAN_KIND_INTERNAL;
     this.attributes = params.attributes ?? [];
+    this.traceState = "";
     this.startTime = params.startTime ?? new Date();
     this.parentSpan = getSpan(parent);
     this.events = [];
     this.isRecording = params?.isRecording ?? true;
 
     if (params?.links !== undefined) {
-      this.links = params.links.map<Span_Link>((param) => {
+      this.links = params.links.map<Span_Link>((param: LinkParam) => {
         if (Array.isArray(param)) {
+          const spanContext = param[0] as SpanContext;
+          const attributes = param[1] ?? [];
           return {
-            spanContext: param[0],
-            attributes: param[1] ?? {},
-          };
+            ...spanContext,
+            attributes,
+            droppedAttributesCount: 0, //TODO
+          } satisfies Span_Link;
         }
-        return param as Link;
+        return param as Span_Link;
       });
     }
 
-    this._traceId = this.parentSpan !== null
-      ? getTraceId(getSpanContext(this.parentSpan), "bin")
-      : generateId(16);
+    this._traceId =
+      this.parentSpan !== null
+        ? getTraceId(getSpanContext(this.parentSpan), "bin")
+        : generateId(16);
     this._spanId = generateId(8);
   }
 
@@ -146,22 +117,38 @@ export class RecordingSpan implements Span, SpanMethods {
     return this._endTime;
   }
 
+  get startTimeUnixNano() {
+    return dateAsLong(this.startTime);
+  }
+
+  get endTimeUnixNano() {
+    return dateAsLong(this.endTime);
+  }
+
+  get traceId() {
+    return this._traceId;
+  }
+
+  get spanId() {
+    return this._spanId;
+  }
+
+  get parentSpanId() {
+    return this.parentSpan?.spanId ?? new Uint8Array([]);
+  }
+
   getContext(): Readonly<SpanContext> {
     return Object.freeze({
       traceId: this._traceId,
       spanId: this._spanId,
       traceFlags: this._traceFlags,
-      traceState: this._traceState,
-      isRemote: this._isRemote,
+      traceState: this.traceState,
+      isRemote: isRemote(this),
     });
   }
 
   get isRootSpan() {
     return this.parentSpan !== null;
-  }
-
-  get isRemote() {
-    return this._isRemote;
   }
 
   getTraceId(format: "hex"): string;
@@ -193,9 +180,8 @@ export class RecordingSpan implements Span, SpanMethods {
     }
     const newStatus: Status = {
       code,
-      message: code === Status_StatusCode.STATUS_CODE_ERROR
-        ? description ?? ""
-        : "",
+      message:
+        code === Status_StatusCode.STATUS_CODE_ERROR ? description ?? "" : "",
     };
 
     this._status = newStatus;
@@ -220,8 +206,9 @@ export class RecordingSpan implements Span, SpanMethods {
     if (typeof event === "string") {
       eventObject = {
         name: event,
-        eventTime: timestamp ?? new Date(),
+        timeUnixNano: dateAsLong(timestamp ?? new Date()),
         attributes,
+        droppedAttributesCount: 0, //TODO
       };
     } else {
       eventObject = event;
@@ -230,24 +217,28 @@ export class RecordingSpan implements Span, SpanMethods {
   }
 
   addException(exception: Error, attributes: TelemetryBag = []) {
-    const defaultAttributes: TelemetryBag = {
-      "exception.message": exception.message,
-      "exception.type": exception.name,
-    };
+    const defaultAttributes: TelemetryBag = [
+      { key: "exception.message", value: { stringValue: exception.message } },
+      { key: "exception.type", value: { stringValue: exception.name } },
+    ];
     const { stack } = exception;
     if (stack !== undefined) {
-      defaultAttributes["exception.stacktrace"] = stack;
+      defaultAttributes.push({
+        key: "exception.stacktrace",
+        value: { stringValue: stack },
+      });
     }
 
-    this.addEvent("exception", {
-      ...defaultAttributes,
-      ...attributes,
-    });
+    this.addEvent("exception", [...defaultAttributes, ...attributes]);
   }
 }
 
 export class NonRecordingSpan implements Span {
   private context: SpanContext;
+
+  public readonly droppedAttributesCount: number = 0; //TODO
+  public readonly droppedEventsCount: number = 0; //TODO
+  public readonly droppedLinksCount: number = 0; //TODO
 
   private constructor(spanContext: SpanContext) {
     this.context = spanContext;
@@ -255,6 +246,28 @@ export class NonRecordingSpan implements Span {
 
   static fromSpanContext(spanContext: SpanContext) {
     return new NonRecordingSpan(spanContext);
+  }
+
+  get traceId() {
+    return this.context.traceId;
+  }
+  get spanId() {
+    return this.context.spanId;
+  }
+  get parentSpanId() {
+    //TODO
+    return new Uint8Array([]);
+  }
+  get traceState() {
+    return this.context.traceState;
+  }
+
+  get startTimeUnixNano() {
+    return dateAsLong(this.startTime);
+  }
+
+  get endTimeUnixNano() {
+    return dateAsLong(this.endTime);
   }
 
   get spanContext(): SpanContext {

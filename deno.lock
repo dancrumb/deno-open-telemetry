@@ -19,6 +19,15 @@
     "https://deno.land/std@0.181.0/fmt/colors.ts": "d67e3cd9f472535241a8e410d33423980bec45047e343577554d3356e1f0ef4e",
     "https://deno.land/std@0.181.0/testing/_diff.ts": "1a3c044aedf77647d6cac86b798c6417603361b66b54c53331b312caeb447aea",
     "https://deno.land/std@0.181.0/testing/_format.ts": "a69126e8a469009adf4cf2a50af889aca364c349797e63174884a52ff75cf4c7",
-    "https://deno.land/std@0.181.0/testing/asserts.ts": "e16d98b4d73ffc4ed498d717307a12500ae4f2cbe668f1a215632d19fcffc22f"
+    "https://deno.land/std@0.181.0/testing/asserts.ts": "e16d98b4d73ffc4ed498d717307a12500ae4f2cbe668f1a215632d19fcffc22f",
+    "https://deno.land/x/long@v1.0.0/mod.ts": "cc01904f22a9e1739d37e3ae666857277ca2684adc9a70453917013cff41c547",
+    "https://deno.land/x/protobuf_ts@v1.2.2/deps.ts": "e2d6bf214948954f4da33356fc48097eb6403f10d6ab429579b2ef7f32097d0a",
+    "https://deno.land/x/protobuf_ts@v1.2.2/endianness.ts": "6a7501b478cf3c8efef9bf676a8fc04af4219cd7a9368fd611d55abf3687c0d8",
+    "https://deno.land/x/protobuf_ts@v1.2.2/get-long-from-string.ts": "59b01d1cbb4288220391d6ac7a505a059cda3e3eb131ddde1c7378300557bf39",
+    "https://deno.land/x/protobuf_ts@v1.2.2/mod.ts": "2a13285c8716257aa5d6b5021d45c74dcb275eaaa46776106ddf78b071cabd88",
+    "https://deno.land/x/protobuf_ts@v1.2.2/reader.ts": "5f9d345315748bca2fda6e4ab8eef9d160dc960670e37a41bde04cbeb1777fc4",
+    "https://deno.land/x/protobuf_ts@v1.2.2/varint-transcoder.ts": "8cf4f4946fd7291a00e5dfcf2436737eb476064c40cc12d6176cab192b70c78c",
+    "https://deno.land/x/protobuf_ts@v1.2.2/writer.ts": "4de59d7cdde9533b3a6d5ce46e24d489f9d73aade4f042d83a9744de9ed4331e",
+    "https://deno.land/x/protobuf_ts@v1.2.2/zig-zag-encoding.ts": "cf39a66d2d7c467f80dad18917a0d990a159ff0a007d53a7340715d5db50ed57"
   }
 }

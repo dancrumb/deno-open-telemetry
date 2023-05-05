@@ -1,6 +1,6 @@
 // deno-lint-ignore-file no-namespace
-import _Long from "long";
-import * as protobuf from "protobuf_ts";
+import * as protobuf from "../../deps.ts";
+import { Long as _Long } from "../../deps.ts";
 
 namespace _m0 {
   export const Reader = protobuf.Reader;

@@ -9,6 +9,6 @@ export interface TracerOptions {
 
 export class TracerProvider {
   getTracer(name: string, options: TracerOptions = {}): Tracer {
-    return new Tracer(name, version);
+    return new Tracer(name, options.version);
   }
 }

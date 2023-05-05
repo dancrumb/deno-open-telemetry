@@ -1,11 +1,16 @@
 import { Attributes } from "../basics.ts";
 import { Context } from "../context/context.ts";
-import { Link, RecordingSpan, Span, SpanKind } from "./span.ts";
+import {
+  Span,
+  Span_Link,
+  Span_SpanKind,
+} from "../opentelemetry/proto/trace/v1/trace.ts";
+import { RecordingSpan } from "./span.ts";
 
 interface SpanCreationParams {
-  kind?: SpanKind;
+  kind?: Span_SpanKind;
   attributes?: Attributes;
-  links?: Link[];
+  links?: Span_Link[];
   startTime?: Date;
 }
 
@@ -15,11 +20,11 @@ export class Tracer {
   createSpan(
     spanName: string,
     parentContext: Context | null,
-    params: SpanCreationParams = {},
+    params: SpanCreationParams = {}
   ): Span {
     const {
-      kind = SpanKind.INTERNAL,
-      attributes = {},
+      kind = Span_SpanKind.SPAN_KIND_INTERNAL,
+      attributes = [],
       links = [],
       startTime = new Date(),
     } = params;
